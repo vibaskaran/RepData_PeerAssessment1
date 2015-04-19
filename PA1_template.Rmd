@@ -8,26 +8,25 @@ output:
 
 ## Loading and preprocessing the data
 
-The following libraries are needed for this project:
+library(ggplot2) #needed for plots
 
-library(ggplot2)#needed for plots
-library(xtable)#needed for pretty table
+library(xtable) #needed for pretty table
 
-#1: Load in the data
+##1: Load in the data
 
 df.1 <- read.csv("activity.csv")
 
-#Check the first 5 rows of the data before processing the data for the project.
+##Check the first 5 rows of the data before processing the data for the project.
 
-#This step allows us to evaluate the first five initial rows of data in the df.1 data set.
+##This step allows us to evaluate the first five initial rows of data in the df.1 data set.
 
 h.noproc <- head(df.1, 5)
 h.noproc <- xtable(h.noproc, caption="First 5 rows: non-processed", label="Head Xtable", digits=1)
 print(h.noproc, include.rownames = TRUE, caption.placement="top")
 
-#Initial Process and Removing the NA’s in the data.
+##Initial Process and Removing the NA’s in the data.
 
-#This step allows us to evalute the first five initial rows of data in the df data set after removing na. values.
+##This step allows us to evalute the first five initial rows of data in the df data set after removing na. values.
 
 df <- na.omit(df.1)
 h.proc <- head(df, 5)
@@ -49,9 +48,8 @@ qplot(steps, data=df.steps, binwidth = "1", xlab = "Total number of steps taken 
 
 ## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
 
-
-#The overall shape of the histogram slightly changes when the binwidth is set at 1.
-#Mean total number of steps per day
+##The overall shape of the histogram slightly changes when the binwidth is set at 1.
+##Mean total number of steps per day
 
 #The next step is to find two measures of central tendency: the mean total number of steps per day and the median number of steps per day.
 
