@@ -51,16 +51,6 @@ qplot(steps, data=df.steps, binwidth = "1", xlab = "Total number of steps taken 
 ##The overall shape of the histogram slightly changes when the binwidth is set at 1.
 ##Mean total number of steps per day
 
-#The next step is to find two measures of central tendency: the mean total number of steps per day and the median number of steps per day.
-
-#mean(df.steps$steps)
-
-#[1] 10766
-
-#median(df.steps$steps)
-
-#[1] 10765
-
 desc <- summary(df.steps) #from the psych library
 desc <- xtable(desc, caption="Summary Statistics for Data", 
                label="Description Xtable", digits=1)
@@ -112,17 +102,11 @@ head(myfill.df)
 
 myts <- tapply(myfill.df$steps, myfill.df$date)
 
-
 qplot(myts, binwidth=5, xlab="Total Number of Steps per Day",
       main="Total Number of Steps per Day After Imputation" )
 
 library(psych)
 describe(myts)
-
-##   vars     n  mean    sd median trimmed   mad min max range skew kurtosis
-## 1    1 15264 30.72 17.47     29   30.65 22.24   2  60    58 0.08    -1.26
-##     se
-## 1 0.14
 
 mean(myts)
 
