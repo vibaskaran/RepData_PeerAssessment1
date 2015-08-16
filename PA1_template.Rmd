@@ -1,140 +1,102 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
-
+# Reproducible Research: Peer Assessment 1
 
 ## Loading and preprocessing the data
-
-library(ggplot2) #needed for plots
-
-library(xtable) #needed for pretty table
-
-##1: Load in the data
-
-df.1 <- read.csv("activity.csv")
-
-##Check the first 5 rows of the data before processing the data for the project.
-
-##This step allows us to evaluate the first five initial rows of data in the df.1 data set.
-
-h.noproc <- head(df.1, 5)
-h.noproc <- xtable(h.noproc, caption="First 5 rows: non-processed", label="Head Xtable", digits=1)
-print(h.noproc, include.rownames = TRUE, caption.placement="top")
-
-##Initial Process and Removing the NA’s in the data.
-
-##This step allows us to evalute the first five initial rows of data in the df data set after removing na. values.
-
-df <- na.omit(df.1)
-h.proc <- head(df, 5)
-h.proc <- xtable(h.proc, caption="First 5 rows: processed", label="HeadP Xtable", digits=1)
-print(h.proc, include.rownames = TRUE, caption.placement="top")
-
+```{r loaddata}
+unzip(zipfile="repdata-data-activity.zip")
+data <- read.csv("activity.csv")
+```
 
 ## What is mean total number of steps taken per day?
-
-df.steps <- aggregate(steps ~ date, df, sum)
-##Raw Histogram
-hist(df.steps$steps, col="lightblue", main = "Histogram of Total # Steps Taken Each Day", 
-     xlab="Total Number of Steps in a Day")
-
-##New Bins set
-qplot(steps, data=df.steps, binwidth = "1", xlab = "Total number of steps taken each day", 
-      main = "Steps with binwidth set at 1", na.rm=TRUE) + 
-      geom_histogram(colour="darkgreen", aes(fill = ..count..)) 
-
-## stat_bin: binwidth defaulted to range/30. Use 'binwidth = x' to adjust this.
-
-##The overall shape of the histogram slightly changes when the binwidth is set at 1.
-##Mean total number of steps per day
-
-desc <- summary(df.steps) #from the psych library
-desc <- xtable(desc, caption="Summary Statistics for Data", 
-               label="Description Xtable", digits=1)
-print(desc, include.rownames = TRUE, caption.placement="top")
-
-
-#The summary function was ran to double check the two values of central tendency that we are interested in: the median and the mean.
-#What is the average daily activity pattern?
-
-#This time, we are looking at the average daily activity pattern. This means that we have to aggregate and then plot. Again, we are using the library (ggplot2)…make sure you have that installed.
-
+```{r}
 library(ggplot2)
-df.averages <- aggregate(x=list(steps=df$steps), by=list(interval=df$interval), FUN=mean)
-ggplot(data=df.averages, aes(x=interval, y=steps)) + geom_line() + 
-  xlab("Intervals set at 5 minutes") + ylab("Average of steps taken")
-
-
-#Further, on average for all days in the dataset df, the 5 minute intervals contains the following maximum number of steps:
+total.steps <- tapply(data$steps, data$date, FUN=sum, na.rm=TRUE)
+qplot(total.steps, binwidth=1000, xlab="total number of steps taken each day")
+mean(total.steps, na.rm=TRUE)
+median(total.steps, na.rm=TRUE)
+```
 
 ## What is the average daily activity pattern?
+```{r}
+library(ggplot2)
+averages <- aggregate(x=list(steps=data$steps), by=list(interval=data$interval),
+                      FUN=mean, na.rm=TRUE)
+ggplot(data=averages, aes(x=interval, y=steps)) +
+    geom_line() +
+    xlab("5-minute interval") +
+    ylab("average number of steps taken")
+```
 
-df.averages[which.max(df.averages$steps),]
+On average across all the days in the dataset, the 5-minute interval contains
+the maximum number of steps?
+```{r}
+averages[which.max(averages$steps),]
+```
 
 ## Imputing missing values
 
-df.missing <- is.na(df$steps)
-num.missing <- sum(df.missing)
-table(df.missing)
+There are many days/intervals where there are missing values (coded as `NA`). The presence of missing days may introduce bias into some calculations or summaries of the data.
 
+```{r how_many_missing}
+missing <- is.na(data$steps)
+# How many missing
+table(missing)
+```
 
-table (num.missing)
+All of the missing values are filled in with mean value for that 5-minute
+interval.
 
-nafiller <- function(steps, interval){
-  filler <- NA
-  if (!is.na(steps))
-    filler <- c(steps)
-  else
-    filler <- (df.averages[df.averages$interval==interval, "steps"])
-  return(filler)
+```{r}
+# Replace each missing value with the mean value of its 5-minute interval
+fill.value <- function(steps, interval) {
+    filled <- NA
+    if (!is.na(steps))
+        filled <- c(steps)
+    else
+        filled <- (averages[averages$interval==interval, "steps"])
+    return(filled)
 }
-myfill.df <- df
-myfill.df$steps <- mapply(nafiller, myfill.df$steps, myfill.df$interval)
+filled.data <- data
+filled.data$steps <- mapply(fill.value, filled.data$steps, filled.data$interval)
+```
+Now, using the filled data set, let's make a histogram of the total number of steps taken each day and calculate the mean and median total number of steps.
 
-#Now we can look at what we have done so far by calling the object.
+```{r}
+total.steps <- tapply(filled.data$steps, filled.data$date, FUN=sum)
+qplot(total.steps, binwidth=1000, xlab="total number of steps taken each day")
+mean(total.steps)
+median(total.steps)
+```
 
-head(myfill.df)
-
-#The next thing we can do is utilize the histogram for visualization with the filled in data set.
-
-myts <- tapply(myfill.df$steps, myfill.df$date)
-
-qplot(myts, binwidth=5, xlab="Total Number of Steps per Day",
-      main="Total Number of Steps per Day After Imputation" )
-
-library(psych)
-describe(myts)
-
-mean(myts)
-
-median(myts)
-
-summary(myts)
+Mean and median values are higher after imputing missing data. The reason is
+that in the original data, there are some days with `steps` values `NA` for 
+any `interval`. The total number of steps taken in such days are set to 0s by
+default. However, after replacing missing `steps` values with the mean `steps`
+of associated `interval` value, these 0 values are removed from the histogram
+of total number of steps taken each day.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+First, let's find the day of the week for each measurement in the dataset. In
+this part, we use the dataset with the filled-in values.
 
-week.identify <- function(date){
- day <- weekdays(date)
- if (day %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"))
-   return("Weekday")
- else if (day %in% c("Saturday", "Sunday"))
-   return("Weekend")
- else
-   stop("Invalid Date")
-}  
-myfill.df$date <- as.Date(myfill.df$date)
-myfill.df$day <- sapply(myfill.df$date, FUN=week.identify)
+```{r}
+weekday.or.weekend <- function(date) {
+    day <- weekdays(date)
+    if (day %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"))
+        return("weekday")
+    else if (day %in% c("Saturday", "Sunday"))
+        return("weekend")
+    else
+        stop("invalid date")
+}
+filled.data$date <- as.Date(filled.data$date)
+filled.data$day <- sapply(filled.data$date, FUN=weekday.or.weekend)
+```
 
-#Let’s look at what we have so far for identifying the day of the week as a weekend or weekday. Is R smart enough to handle that? The answer is, yes.
+Now, let's make a panel plot containing plots of average number of steps taken
+on weekdays and weekends.
+```{r}
+averages <- aggregate(steps ~ interval + day, data=filled.data, mean)
+ggplot(averages, aes(interval, steps)) + geom_line() + facet_grid(day ~ .) +
+    xlab("5-minute interval") + ylab("Number of steps")
+```
 
-head(myfill.df$day)
-
-## [1] "Weekday" "Weekday" "Weekday" "Weekday" "Weekday" "Weekday"
-
-#The next step for this is to visually explore the data that we created. The option that is used is the panel plot that contains the average number of steps taken on either weekends or weekdays. Do people take more steps on the weekends or the weekdays?
-
-avg <- aggregate(steps ~ interval + day, data=myfill.df, mean)
-ggplot(avg, aes(interval, steps))+geom_line()+ facet_grid(day ~ .) + xlab("Intervals at 5 minutes") + ylab("# of Steps")
